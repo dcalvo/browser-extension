@@ -1,6 +1,29 @@
+// List of file extensions we create context menu options on
+const fileExtensions: Array<string> = [
+  ".pdf",
+  ".rtf",
+  ".doc",
+  ".docx",
+  ".xls",
+  ".xlsx",
+  ".ppt",
+  ".pptx",
+  ".txt",
+  ".odt",
+  ".ods",
+  ".odp",
+  ".jpg",
+  ".jpeg",
+  ".gif",
+  ".png",
+  ".tiff",
+  ".tif",
+  ".bmp",
+]
+
 // List of MIME types we intercept downloads on
 // List of MIME types at https://www.iana.org/assignments/media-types/media-types.xhtml
-const fileExtensions: Array<string> = [
+const mimeTypes: Array<string> = [
   "application/pdf",                                                              // .pdf
   "application/rtf",                                                              // .rtf
   "application/msword",                                                           // .doc
@@ -18,22 +41,33 @@ const fileExtensions: Array<string> = [
   "image/png",                                                                    // .png
   "image/tiff",                                                                   // .tif, .tiff
   "image/bmp",                                                                    // .bmp
-];
+]
 
 // Intercept downloads and ask to Scribe it
 chrome.downloads.onCreated.addListener(function(item) {
-  if (fileExtensions.includes(item.mime)){
-    chrome.downloads.cancel(item.id);
-    alert(item.mime);
+  if (mimeTypes.includes(item.mime)){
+    chrome.downloads.cancel(item.id)
+    alert(item.mime)
   }
-});
+})
+
+// Helper function to build match patterns since Chrome API doesn't support regex
+function matchedUrlListBuilder() {
+  let matchedUrls: Array<string> = []
+  for (let extension of fileExtensions) {
+    matchedUrls.push("*://*/*" + extension)
+  }
+
+  return matchedUrls
+}
 
 // Create context menu option for images
-chrome.contextMenus.removeAll();
+chrome.contextMenus.removeAll()
 chrome.contextMenus.create({
       title: "Convert with Scribe",
-      contexts: ["image"],
+      contexts: ["image", "link", "page_action"],
       onclick: function() {
-        alert('you\'ve been scribed');
-      }
-});
+        alert('you\'ve been scribed')
+      },
+      targetUrlPatterns: matchedUrlListBuilder()
+})
