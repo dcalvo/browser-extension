@@ -20,6 +20,8 @@
     "jsx": "react"
   },
   "include": [
-    "src"
+    "src",
+    "public/intercept.js",
+    "public/intercept.ts"
   ]
 }

@@ -45,9 +45,15 @@ var mimeTypes = [
 chrome.downloads.onCreated.addListener(function (item) {
     if (mimeTypes.includes(item.mime)) {
         chrome.downloads.cancel(item.id);
-        alert(item.mime);
+        chrome.windows.create({ url: chrome.extension.getURL("confirm.html"), type: "popup", width: 800, height: 600 }, function () {
+            chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+                if (request.message === "hi")
+                    console.log("hello world");
+            });
+        });
     }
 });
+// Helper function to build match patterns since Chrome API doesn't support regex
 function matchedUrlListBuilder() {
     var matchedUrls = [];
     for (var _i = 0, fileExtensions_1 = fileExtensions; _i < fileExtensions_1.length; _i++) {
@@ -60,7 +66,7 @@ function matchedUrlListBuilder() {
 chrome.contextMenus.removeAll();
 chrome.contextMenus.create({
     title: "Convert with Scribe",
-    contexts: ["image", "link"],
+    contexts: ["image", "link", "page_action"],
     onclick: function () {
         alert('you\'ve been scribed');
     },

@@ -47,7 +47,14 @@ const mimeTypes: Array<string> = [
 chrome.downloads.onCreated.addListener(function(item) {
   if (mimeTypes.includes(item.mime)){
     chrome.downloads.cancel(item.id)
-    alert(item.mime)
+    chrome.windows.create({url: chrome.extension.getURL("confirm.html"), type: "popup", width: 800, height: 600}, function() {
+      // TODO send download file name to window
+      chrome.runtime.onMessage.addListener(
+        (request, sender, sendResponse) => {
+          if (request.message === "hi")
+            console.log("hello world")
+        })
+    })
   }
 })
 
