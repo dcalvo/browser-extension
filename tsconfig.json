@@ -21,7 +21,6 @@
   },
   "include": [
     "src",
-    "public/intercept.js",
-    "public/intercept.ts"
+    "public/**/*",
   ]
 }
