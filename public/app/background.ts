@@ -1,5 +1,5 @@
 // @ts-ignore
-
+// The above line is used to suppress the error that "all files must be modules" which I don't know how to fix
 // List of file extensions we create context menu options on
 const fileExtensions: Array<string> = [
   ".pdf",
@@ -74,13 +74,13 @@ chrome.downloads.onCreated.addListener(function(item) {
   }
 })
 
-// Listener for download intercept confirmation window
+// TODO Listener for download intercept confirmation window
 chrome.runtime.onMessage.addListener(
   function(request, sender, sendResponse) {
     if (request.action == "convert")
-      console.log(request.downloadName + " 1 " + request.downloadURL)
+      console.log(request.downloadName + " convert " + request.downloadURL)
     else if (request.action == "download")
-      console.log(request.downloadName + " 2 " + request.downloadURL)
+      console.log(request.downloadName + " download " + request.downloadURL)
     else
       console.log("error")
 })
