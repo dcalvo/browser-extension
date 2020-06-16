@@ -8,13 +8,17 @@ document.addEventListener('DOMContentLoaded', function () {
 // Listener for filename and download URL
 var downloadName = "";
 var downloadURL = "";
-chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-    console.log(request);
-    if (request.downloadName != null && request.downloadURL != null) {
-        downloadName = request.downloadName;
-        downloadURL = request.downloadURL;
-    }
-});
+if (window.location.hash) {
+    var downloadInfo = JSON.parse(atob(window.location.hash.substr(1)));
+    downloadURL = downloadInfo.downloadURL;
+    downloadName = downloadURL.substr(downloadURL.lastIndexOf('/') + 1);
+    console.log(downloadURL);
+    console.log(downloadName);
+    console.log(downloadInfo);
+}
+else {
+    console.log("window.location.hash error");
+}
 function convertWithScribe() {
     if (downloadName != null && downloadURL != null) {
         chrome.runtime.sendMessage({ action: "convert", downloadName: downloadName, downloadURL: downloadURL });

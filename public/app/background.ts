@@ -58,24 +58,13 @@ function downloadAge(download: chrome.downloads.DownloadItem) {
 chrome.downloads.onCreated.addListener(function(item) {
   if (downloadAge(item) < 2 && item.state == "in_progress" && mimeTypes.includes(item.mime)) {
     chrome.downloads.cancel(item.id)
-    let tabId: number | undefined
-    chrome.windows.create({url: chrome.runtime.getURL("confirm.html"), type: "popup", width: 800, height: 600}, function(window) {
-      // TODO send download file name to window because this doesn't work
-      chrome.tabs.query({windowId: window!.id}, function(tabs) {
-        if (tabs[0].id == null) {
-          throw new Error("Confirmation window creation failed")
-        } else {
-          tabId = tabs[0].id
-        }
-      })
-    })
-    chrome.tabs.sendMessage(tabId!, {downloadName: item.filename, downloadURL: item.finalUrl})
-    console.log("window created")
+    const downloadInfo = `{"downloadURL":"${item.finalUrl}"}` // we use btoa() to encode in base64
+    chrome.windows.create({url: chrome.runtime.getURL("confirm.html#" + btoa(downloadInfo)), type: "popup", width: 800, height: 600})
   }
 })
 
-// TODO Listener for download intercept confirmation window
-chrome.runtime.onMessage.addListener(
+// Listener for download intercept confirmation window
+chrome.runtime.onMessage.addListener(  // TODO logic for routing action
   function(request, sender, sendResponse) {
     if (request.action == "convert")
       console.log(request.downloadName + " convert " + request.downloadURL)

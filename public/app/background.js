@@ -1,4 +1,5 @@
 // @ts-ignore
+// The above line is used to suppress the error that "all files must be modules" which I don't know how to fix
 // List of file extensions we create context menu options on
 var fileExtensions = [
     ".pdf",
@@ -54,28 +55,17 @@ function downloadAge(download) {
 chrome.downloads.onCreated.addListener(function (item) {
     if (downloadAge(item) < 2 && item.state == "in_progress" && mimeTypes.includes(item.mime)) {
         chrome.downloads.cancel(item.id);
-        var tabId_1;
-        chrome.windows.create({ url: chrome.runtime.getURL("confirm.html"), type: "popup", width: 800, height: 600 }, function (window) {
-            // TODO send download file name to window
-            chrome.tabs.query({ windowId: window.id }, function (tabs) {
-                if (tabs[0].id == null) {
-                    throw new Error("Confirmation window creation failed");
-                }
-                else {
-                    tabId_1 = tabs[0].id;
-                }
-            });
-        });
-        chrome.tabs.sendMessage(tabId_1, { downloadName: item.filename, downloadURL: item.finalUrl });
+        var downloadInfo = "{\"downloadURL\":\"" + item.finalUrl + "\"}";
+        chrome.windows.create({ url: chrome.runtime.getURL("confirm.html#" + btoa(downloadInfo)), type: "popup", width: 800, height: 600 }, function (window) { });
         console.log("window created");
     }
 });
-// Listener for download intercept confirmation window
+// TODO Listener for download intercept confirmation window
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     if (request.action == "convert")
-        console.log(request.downloadName + " 1 " + request.downloadURL);
+        console.log(request.downloadName + " convert " + request.downloadURL);
     else if (request.action == "download")
-        console.log(request.downloadName + " 2 " + request.downloadURL);
+        console.log(request.downloadName + " download " + request.downloadURL);
     else
         console.log("error");
 });
