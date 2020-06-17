@@ -66,12 +66,14 @@ chrome.downloads.onCreated.addListener(function(item) {
 // Listener for download intercept confirmation window
 chrome.runtime.onMessage.addListener(  // TODO logic for routing action
   function(request, sender, sendResponse) {
-    if (request.action == "convert")
-      console.log(request)
-    else if (request.action == "download")
-      console.log(request)
-    else
+    if (request.action == "convert"){
+      chrome.downloads.cancel(parseInt(request.downloadID))
+      convert()
+    } else if (request.action == "download") {
+    chrome.downloads.resume(parseInt(request.downloadID))
+    } else {
       console.log("error")
+    }
 })
 
 // Helper function to build match patterns for extension URLs since Chrome API doesn't support regex
