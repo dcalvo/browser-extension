@@ -54,18 +54,18 @@ function downloadAge(download) {
 // Intercept downloads and ask to Scribe it
 chrome.downloads.onCreated.addListener(function (item) {
     if (downloadAge(item) < 2 && item.state == "in_progress" && mimeTypes.includes(item.mime)) {
-        chrome.downloads.cancel(item.id);
-        var downloadInfo = "{\"downloadURL\":\"" + item.finalUrl + "\"}";
-        chrome.windows.create({ url: chrome.runtime.getURL("confirm.html#" + btoa(downloadInfo)), type: "popup", width: 800, height: 600 }, function (window) { });
-        console.log("window created");
+        chrome.downloads.pause(item.id);
+        var downloadInfo = "{\"downloadURL\":\"" + item.finalUrl + "\", \"downloadID\":\"" + item.id + "\"}"; // we use btoa() to encode in base64
+        chrome.windows.create({ url: chrome.runtime.getURL("confirm.html#" + btoa(downloadInfo)), type: "popup", width: 800, height: 600 });
     }
 });
-// TODO Listener for download intercept confirmation window
-chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+// Listener for download intercept confirmation window
+chrome.runtime.onMessage.addListener(// TODO logic for routing action
+function (request, sender, sendResponse) {
     if (request.action == "convert")
-        console.log(request.downloadName + " convert " + request.downloadURL);
+        console.log(request);
     else if (request.action == "download")
-        console.log(request.downloadName + " download " + request.downloadURL);
+        console.log(request);
     else
         console.log("error");
 });
@@ -83,8 +83,10 @@ chrome.contextMenus.removeAll();
 chrome.contextMenus.create({
     title: "Convert with Scribe",
     contexts: ["image", "link", "page_action"],
-    onclick: function () {
-        alert('you\'ve been scribed');
-    },
+    onclick: convert,
     targetUrlPatterns: matchedUrlListBuilder()
 });
+// Placeholder for eventual convert process
+function convert() {
+    alert("converted!");
+}

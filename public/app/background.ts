@@ -57,8 +57,8 @@ function downloadAge(download: chrome.downloads.DownloadItem) {
 // Intercept downloads and ask to Scribe it
 chrome.downloads.onCreated.addListener(function(item) {
   if (downloadAge(item) < 2 && item.state == "in_progress" && mimeTypes.includes(item.mime)) {
-    chrome.downloads.cancel(item.id)
-    const downloadInfo = `{"downloadURL":"${item.finalUrl}"}` // we use btoa() to encode in base64
+    chrome.downloads.pause(item.id)
+    const downloadInfo = `{"downloadURL":"${item.finalUrl}", "downloadID":"${item.id}"}` // we use btoa() to encode in base64
     chrome.windows.create({url: chrome.runtime.getURL("confirm.html#" + btoa(downloadInfo)), type: "popup", width: 800, height: 600})
   }
 })
@@ -67,9 +67,9 @@ chrome.downloads.onCreated.addListener(function(item) {
 chrome.runtime.onMessage.addListener(  // TODO logic for routing action
   function(request, sender, sendResponse) {
     if (request.action == "convert")
-      console.log(request.downloadName + " convert " + request.downloadURL)
+      console.log(request)
     else if (request.action == "download")
-      console.log(request.downloadName + " download " + request.downloadURL)
+      console.log(request)
     else
       console.log("error")
 })
@@ -89,8 +89,11 @@ chrome.contextMenus.removeAll()
 chrome.contextMenus.create({
       title: "Convert with Scribe",
       contexts: ["image", "link", "page_action"],
-      onclick: function() {
-        alert('you\'ve been scribed')
-      },
+      onclick: convert,
       targetUrlPatterns: matchedUrlListBuilder()
 })
+
+// Placeholder for eventual convert process
+function convert() {
+  alert("converted!")
+}
