@@ -43,6 +43,14 @@ var mimeTypes = [
     "image/tiff",
     "image/bmp",
 ];
+// Listener for URL changes so we can display pageAction correctly
+chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
+    var _a;
+    var urlFileExtension = '.' + ((_a = tab.url) === null || _a === void 0 ? void 0 : _a.substr(tab.url.lastIndexOf('.') + 1));
+    if (fileExtensions.includes(urlFileExtension)) {
+        chrome.pageAction.show(tabId);
+    }
+});
 // Helper function to compare download object's startTime ISO timestamp with Date.now() since Chrome API is bugged for onCreated events
 // See (https://bugs.chromium.org/p/chromium/issues/detail?id=432757)
 function downloadAge(download) {
@@ -82,14 +90,40 @@ function matchedUrlListBuilder() {
     }
     return matchedUrls;
 }
-// Create context menu option for images
-chrome.contextMenus.removeAll();
+// Create context menu option for images and links
+var matchedUrls = matchedUrlListBuilder();
 chrome.contextMenus.create({
     title: "Convert with Scribe",
-    contexts: ["image", "link", "page_action"],
-    onclick: convert,
-    targetUrlPatterns: matchedUrlListBuilder()
+    contexts: ["image", "link"],
+    onclick: function () {
+        alert("image or link");
+    },
+    targetUrlPatterns: matchedUrls
 });
+// Create context menu option for valid stand-alone file pages which we'll hide/show as necessary
+chrome.contextMenus.create({
+    id: "pageActionContext",
+    title: "Convert with Scribe",
+    contexts: ["all"],
+    onclick: function () {
+        alert("url");
+    },
+    documentUrlPatterns: matchedUrls
+});
+// TODO context menu option for page action valid pages since visible selector is bugged in contextMenus.update
+/* ANOTHER CHROME BUG AAAAAAAAAAA
+// Listener for active tab URL so we can hide/show pageActionContext option
+chrome.tabs.onActivated.addListener(function(activeInfo) {
+  let tab = chrome.tabs.get(activeInfo.tabId, function(tab) {
+    let urlFileExtension = '.' + tab.url?.substr(tab.url.lastIndexOf('.') + 1)
+    if (fileExtensions.includes(urlFileExtension)) {
+      chrome.contextMenus.update("pageActionContext", {visible: true})
+    } else {
+      chrome.contextMenus.update("pageActionContext", {visible: false})
+    }
+  })
+})
+*/
 // Placeholder for eventual convert process
 function convert() {
     alert("converted!");
