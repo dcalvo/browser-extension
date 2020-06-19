@@ -106,27 +106,34 @@ chrome.contextMenus.create({
       targetUrlPatterns: matchedUrls
 })
 
-// Create context menu option for valid stand-alone file pages which we'll hide/show as necessary
-chrome.contextMenus.create({
-  id: "pageActionContext", // this context menu option is essentially tethered to whether the pageAction button is lit up
-  title: "Convert with Scribe",
-  contexts: ["page", "frame"],
-  onclick: function() {
-    convert()
-  }
-})
-
+// Experimental code that is capable of detecting embedded PDFs (and other filetypes) in most cases, but has bugs where
+// opening new windows created unexpected behavior (context menu not being updated properly)
+/*
 // Listener for active tab URL so we can hide/show pageActionContext option
 chrome.tabs.onActivated.addListener(function(activeInfo) {
   let tab = chrome.tabs.get(activeInfo.tabId, function(tab) {
     let urlFileExtension = '.' + tab.url?.substr(tab.url.lastIndexOf('.') + 1)
     if (fileExtensions.includes(urlFileExtension)) {
-      chrome.contextMenus.update('pageActionContext', {visible: true})
+      // Create context menu option for valid stand-alone file pages which we'll hide/show as necessary
+      chrome.contextMenus.remove("pageActionContext", function() {
+        void chrome.runtime.lastError
+        chrome.contextMenus.create({
+          id: "pageActionContext", // this context menu option is essentially tethered to whether the pageAction button is lit up
+          title: "Convert with Scribe",
+          contexts: ["page", "frame"],
+          onclick: function() {
+            convert()
+          }
+        })
+      })
     } else {
-      chrome.contextMenus.update('pageActionContext', {visible: false})
+      chrome.contextMenus.remove("pageActionContext", function() {
+        void chrome.runtime.lastError
+      })
     }
   })
 })
+*/
 
 // Placeholder for eventual convert process
 function convert() {

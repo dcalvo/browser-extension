@@ -12,8 +12,7 @@
       "24": "logo-small.png",
       "32": "logo-small.png"
     },
-    "default_title": "Convert with Scribe",     
-    "default_popup": "popup.html"        
+    "default_title": "Convert with Scribe"
   },
   "icons": {
     "16": "logo-small.png",
