@@ -96,7 +96,7 @@ chrome.contextMenus.create({
     title: "Convert with Scribe",
     contexts: ["image", "link"],
     onclick: function () {
-        alert("image or link");
+        convert();
     },
     targetUrlPatterns: matchedUrls
 });
@@ -104,26 +104,24 @@ chrome.contextMenus.create({
 chrome.contextMenus.create({
     id: "pageActionContext",
     title: "Convert with Scribe",
-    contexts: ["all"],
+    contexts: ["page", "frame"],
     onclick: function () {
-        alert("url");
-    },
-    documentUrlPatterns: matchedUrls
-});
-// TODO context menu option for page action valid pages since visible selector is bugged in contextMenus.update
-/* ANOTHER CHROME BUG AAAAAAAAAAA
-// Listener for active tab URL so we can hide/show pageActionContext option
-chrome.tabs.onActivated.addListener(function(activeInfo) {
-  let tab = chrome.tabs.get(activeInfo.tabId, function(tab) {
-    let urlFileExtension = '.' + tab.url?.substr(tab.url.lastIndexOf('.') + 1)
-    if (fileExtensions.includes(urlFileExtension)) {
-      chrome.contextMenus.update("pageActionContext", {visible: true})
-    } else {
-      chrome.contextMenus.update("pageActionContext", {visible: false})
+        convert();
     }
-  })
-})
-*/
+});
+// Listener for active tab URL so we can hide/show pageActionContext option
+chrome.tabs.onActivated.addListener(function (activeInfo) {
+    var tab = chrome.tabs.get(activeInfo.tabId, function (tab) {
+        var _a;
+        var urlFileExtension = '.' + ((_a = tab.url) === null || _a === void 0 ? void 0 : _a.substr(tab.url.lastIndexOf('.') + 1));
+        if (fileExtensions.includes(urlFileExtension)) {
+            chrome.contextMenus.update('pageActionContext', { visible: true });
+        }
+        else {
+            chrome.contextMenus.update('pageActionContext', { visible: false });
+        }
+    });
+});
 // Placeholder for eventual convert process
 function convert() {
     alert("converted!");
