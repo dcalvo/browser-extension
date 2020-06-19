@@ -43,13 +43,20 @@ var mimeTypes = [
     "image/tiff",
     "image/bmp",
 ];
+// Helper function to check if the given URL is a supported filetype
+function isSupported(url) {
+    var urlFileExtension = '.' + (url === null || url === void 0 ? void 0 : url.substr(url.lastIndexOf('.') + 1));
+    return fileExtensions.includes(urlFileExtension);
+}
 // Listener for URL changes so we can display pageAction correctly
 chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
-    var _a;
-    var urlFileExtension = '.' + ((_a = tab.url) === null || _a === void 0 ? void 0 : _a.substr(tab.url.lastIndexOf('.') + 1));
-    if (fileExtensions.includes(urlFileExtension)) {
+    if (isSupported(tab.url)) {
         chrome.pageAction.show(tabId);
     }
+});
+// Listener for when the Scribe toolbar button is clicked
+chrome.pageAction.onClicked.addListener(function (tab) {
+    convert(tab.url);
 });
 // Helper function to compare download object's startTime ISO timestamp with Date.now() since Chrome API is bugged for onCreated events
 // See (https://bugs.chromium.org/p/chromium/issues/detail?id=432757)
@@ -60,9 +67,12 @@ function downloadAge(download) {
     return diff / 1000; // in seconds
 }
 // Intercept downloads and ask to Scribe it
-chrome.downloads.onCreated.addListener(function (item) {
-    if (downloadAge(item) < 2 && item.state == "in_progress" && mimeTypes.includes(item.mime)) {
+chrome.downloads.onDeterminingFilename.addListener(function (item) {
+    if (downloadAge(item) < 2 &&
+        (mimeTypes.includes(item.mime) || isSupported(item.finalUrl))) {
         chrome.downloads.pause(item.id);
+        if (item.state == "complete")
+            chrome.downloads.removeFile(item.id);
         var downloadInfo = "{\"downloadURL\":\"" + item.finalUrl + "\", \"downloadID\":\"" + item.id + "\"}"; // we use btoa() to encode in base64
         chrome.windows.create({ url: chrome.runtime.getURL("confirm.html#" + btoa(downloadInfo)), type: "popup", width: 800, height: 600 });
     }
@@ -72,13 +82,13 @@ chrome.runtime.onMessage.addListener(// TODO logic for routing action
 function (request, sender, sendResponse) {
     if (request.action == "convert") {
         chrome.downloads.cancel(parseInt(request.downloadID));
-        convert();
+        convert(request.downloadURL);
     }
     else if (request.action == "download") {
         chrome.downloads.resume(parseInt(request.downloadID));
     }
     else {
-        console.log("error");
+        console.log("download confirmation routing error");
     }
 });
 // Helper function to build match patterns for extension URLs since Chrome API doesn't support regex
@@ -95,8 +105,8 @@ var matchedUrls = matchedUrlListBuilder();
 chrome.contextMenus.create({
     title: "Convert with Scribe",
     contexts: ["image", "link"],
-    onclick: function () {
-        convert();
+    onclick: function (info) {
+        convert(info);
     },
     targetUrlPatterns: matchedUrls
 });
@@ -129,6 +139,17 @@ chrome.tabs.onActivated.addListener(function(activeInfo) {
 })
 */
 // Placeholder for eventual convert process
-function convert() {
-    alert("converted!");
+function convert(url) {
+    if (typeof url == "object") {
+        if (url.linkUrl) {
+            url = url.linkUrl;
+        }
+        else if (url.mediaType == "image") {
+            url = url.srcUrl;
+        }
+        else {
+            console.log("onClick URL retrieval error");
+        }
+    }
+    alert(url);
 }
