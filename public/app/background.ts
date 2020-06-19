@@ -88,13 +88,26 @@ chrome.downloads.onCreated.addListener(function(item) {
 // Listener for download intercept confirmation window
 chrome.runtime.onMessage.addListener(  // TODO logic for routing action
   function(request, sender, sendResponse) {
+    let downloadId: number = parseInt(request.downloadID)
     if (request.action == "convert"){
-      chrome.downloads.cancel(parseInt(request.downloadID))
-      convert(request.downloadURL)
+      chrome.downloads.search({id: downloadId}, function(download) {
+        if (download[0].state == "complete") {
+          chrome.downloads.removeFile(downloadId)
+        } else {
+          chrome.downloads.cancel(downloadId)
+        }
+        chrome.downloads.erase({id: downloadId}, function() {
+          convert(request.downloadURL)
+        })
+      })
     } else if (request.action == "download") {
-      chrome.downloads.resume(parseInt(request.downloadID))
+      chrome.downloads.search({id: downloadId}, function(download) {
+        if (download[0].state != "complete") {
+          chrome.downloads.resume(downloadId)
+        }
+      })
     } else {
-      console.log("download confirmation routing error")
+      console.log("download interception error")
     }
 })
 
