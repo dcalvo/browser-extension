@@ -42,4 +42,3 @@ function continueDownload() {
     continueDownloadOnExit = false; // required otherwise we fall into an infinite loop
     window.close();
 }
-// TODO receive download filename from background and send appropiate responses back

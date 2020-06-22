@@ -1,6 +1,11 @@
 // @ts-ignore
 // The above line is used to suppress the error that "all files must be modules" which I don't know how to fix
 
+// Base URL that relative URLs are added onto
+let baseUrl = "https://scribeit.io"
+let uploadUrl = "/extension/api/documents"
+let welcomeUrl = "/extension/start"
+
 // List of file extensions we create context menu options on
 const fileExtensions: Array<string> = [
   ".pdf",
@@ -53,14 +58,14 @@ function isSupported(url: string | undefined) {
 }
 
 // Listener for URL changes so we can display pageAction correctly
-chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
+chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
   if (isSupported(tab.url)) {
     chrome.pageAction.show(tabId)
   }
 })
 
 // Listener for when the Scribe toolbar button is clicked
-chrome.pageAction.onClicked.addListener(function(tab) {
+chrome.pageAction.onClicked.addListener(function (tab) {
   convert(tab.url)
 })
 
@@ -69,46 +74,45 @@ chrome.pageAction.onClicked.addListener(function(tab) {
 function downloadAge(download: chrome.downloads.DownloadItem) {
   let date1 = new Date(Date.now())
   let date2 = new Date(download.startTime)
-  let diff = date1.getTime()-date2.getTime()
+  let diff = date1.getTime() - date2.getTime()
   return diff / 1000 // in seconds
 }
 
 // Intercept downloads and ask to Scribe it
-chrome.downloads.onCreated.addListener(function(item) {
+chrome.downloads.onCreated.addListener(function (item) {
   if (
     downloadAge(item) < 2 && item.state == "in_progress" &&
     (mimeTypes.includes(item.mime) || isSupported(item.finalUrl))
   ) {
     chrome.downloads.pause(item.id)
     const downloadInfo = `{"downloadURL":"${item.finalUrl}", "downloadID":"${item.id}"}` // we use btoa() to encode in base64
-    chrome.windows.create({url: chrome.runtime.getURL("confirm.html#" + btoa(downloadInfo)), type: "popup", width: 800, height: 600})
+    chrome.windows.create({ url: chrome.runtime.getURL("confirm.html#" + btoa(downloadInfo)), type: "popup", width: 800, height: 600 })
   }
 })
 
 // Listener for download intercept confirmation window
-chrome.runtime.onMessage.addListener(  // TODO logic for routing action
-  function(request, sender, sendResponse) {
-    let downloadId: number = parseInt(request.downloadID)
-    if (request.action == "convert"){
-      chrome.downloads.search({id: downloadId}, function(download) {
-        if (download[0].state == "complete") {
-          chrome.downloads.removeFile(downloadId)
-        } else {
-          chrome.downloads.cancel(downloadId)
-        }
-        chrome.downloads.erase({id: downloadId}, function() {
-          convert(request.downloadURL)
-        })
+chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+  let downloadId: number = parseInt(request.downloadID)
+  if (request.action == "convert") {
+    chrome.downloads.search({ id: downloadId }, function (download) {
+      if (download[0].state == "complete") { // Fix to ensure we still clean up tiny files we were too slow to intercept and pause
+        chrome.downloads.removeFile(downloadId)
+      } else {
+        chrome.downloads.cancel(downloadId)
+      }
+      chrome.downloads.erase({ id: downloadId }, function () {
+        convert(request.downloadURL)
       })
-    } else if (request.action == "download") {
-      chrome.downloads.search({id: downloadId}, function(download) {
-        if (download[0].state != "complete") {
-          chrome.downloads.resume(downloadId)
-        }
-      })
-    } else {
-      console.log("download interception error")
-    }
+    })
+  } else if (request.action == "download") {
+    chrome.downloads.search({ id: downloadId }, function (download) {
+      if (download[0].state != "complete") {
+        chrome.downloads.resume(downloadId)
+      }
+    })
+  } else {
+    console.log("download interception error")
+  }
 })
 
 // Helper function to build match patterns for extension URLs since Chrome API doesn't support regex
@@ -117,19 +121,18 @@ function matchedUrlListBuilder() {
   for (let extension of fileExtensions) {
     matchedUrls.push("*://*/*" + extension)
   }
-
   return matchedUrls
 }
 
 // Create context menu option for images and links
 let matchedUrls = matchedUrlListBuilder()
 chrome.contextMenus.create({
-      title: "Convert with Scribe",
-      contexts: ["image", "link"],
-      onclick: function(info) {
-        convert(info)
-      },
-      targetUrlPatterns: matchedUrls
+  title: "Convert with Scribe",
+  contexts: ["image", "link"],
+  onclick: function (info) {
+    convert(info)
+  },
+  targetUrlPatterns: matchedUrls
 })
 
 // Experimental code that is capable of detecting embedded PDFs (and other filetypes) in most cases, but has bugs where
@@ -161,8 +164,19 @@ chrome.tabs.onActivated.addListener(function(activeInfo) {
 })
 */
 
+async function submitDocument(formData: FormData) {
+  let response = await fetch(baseUrl + uploadUrl, {
+    method: "POST",
+    credentials: "include",
+    body: formData
+  })
+  let data = await response.json()
+  return data
+}
+
 // Placeholder for eventual convert process
 function convert(url: chrome.contextMenus.OnClickData | string | undefined) {
+  // Handle URL extraction from onClick events
   if (typeof url == "object") {
     if (url.linkUrl) {
       url = url.linkUrl
@@ -172,5 +186,14 @@ function convert(url: chrome.contextMenus.OnClickData | string | undefined) {
       console.log("onClick URL retrieval error")
     }
   }
-  alert(url)
+
+  let formData = new FormData() as any
+  // TODO check if the url is http:// or file:///
+  if (true) { //http
+    formData.append("document[url]", url)
+  } else {
+    formData.append("document[file]", File) // TODO handle file uploading
+  }
+
+  submitDocument(formData).then(data => alert(data)).catch(error => alert("error: " + error))
 }
