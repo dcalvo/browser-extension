@@ -65,7 +65,10 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
 })
 
 // Listener for when the Scribe toolbar button is clicked
-chrome.pageAction.onClicked.addListener(function (tab) {
+chrome.pageAction.onClicked.addListener(async function (tab) {
+  // for testing TODO remove
+  //getFileFromUrl(tab.url!)
+  
   convert(tab.url!)
 })
 
@@ -111,7 +114,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
       }
     })
   } else {
-    console.log("download interception error")
+    console.log("intercept.js response error")
   }
 })
 
@@ -164,6 +167,19 @@ chrome.tabs.onActivated.addListener(function(activeInfo) {
 })
 */
 
+async function getFileFromUrl(url: string) {
+  let fileName = url.substring(url.lastIndexOf('/') + 1)
+  let file = await fetch(url).then(response => response.blob()).then(blobFile => {
+    return new File([blobFile], fileName, {type: blobFile.type})
+  }).catch(err => console.log("getFileFromUrl error: " + err))
+  
+  // for testing TODO remove
+  // let testUrl = URL.createObjectURL(file)
+  // chrome.downloads.download({url: testUrl, filename:(file as File).name})
+  
+  return file
+}
+
 async function submitDocument(formData: FormData) {
   let response = await fetch(baseUrl + uploadUrl, {
     method: "POST",
@@ -175,7 +191,7 @@ async function submitDocument(formData: FormData) {
 }
 
 // WIP convert process
-function convert(url: string | chrome.contextMenus.OnClickData) {
+async function convert(url: string | chrome.contextMenus.OnClickData) {
   // Handle URL extraction from onClick events
   if (typeof url == "object") {
     if (url.linkUrl) {
@@ -190,13 +206,13 @@ function convert(url: string | chrome.contextMenus.OnClickData) {
   let formData = new FormData() as any
 
   const urlScheme = (url as string).substring(0, (url as string).indexOf(':'))
-  if (urlScheme == "http" || urlScheme == "https") {
+  if (false) {//urlScheme == "http" || urlScheme == "https"
     formData.append("document[url]", (url as string))
   } else {
-    formData.append("document[file]", File) // TODO handle file uploading
+    formData.append("document[file]", await getFileFromUrl(url as string))
   }
 
-  submitDocument(formData).then(response => {
+  await submitDocument(formData).then(response => {
     alert(JSON.stringify(response))
     if (!response.hasOwnProperty("errors")) {
       chrome.tabs.create({url: baseUrl + response.document_url})
@@ -210,4 +226,10 @@ function convert(url: string | chrome.contextMenus.OnClickData) {
   //{"document_url":"/documents/e5113747-6b4b-4b1a-b69b-c8ac4d884893/html"}
   //{"errors":{"url":"Scribe couldn't retrieve a document from this URL."}}
 
+
+  //scenarios
+  //we have a public accessible url. we can convert. PASSED
+  //we have a private unaccessible url. we need to fetch file (with creds) then upload as document. TODO
+  //we have a local file. we need to locate it on file system then upload as document. TODO
+  //we need getFileFromUrl() which checks if its file:// or not. if true: search file system. else: use fetch api
 }
