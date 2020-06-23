@@ -23,6 +23,7 @@
     "scripts": ["app/background.js"]
   },
   "content_security_policy": "script-src 'self' 'sha256-CMyYic0d7L0Q9AwjGU0n6buHFRR6bU3TOAe0P7DEJrk='; object-src 'self'",  "permissions": [
+    "<all_urls>",
     "contextMenus",
     "downloads",
     "tabs"

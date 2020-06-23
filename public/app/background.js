@@ -85,7 +85,7 @@ var mimeTypes = [
 ];
 // Helper function to check if the given URL is a supported filetype
 function isSupported(url) {
-    var urlFileExtension = '.' + (url === null || url === void 0 ? void 0 : url.substr(url.lastIndexOf('.') + 1));
+    var urlFileExtension = '.' + (url === null || url === void 0 ? void 0 : url.substring(url.lastIndexOf('.') + 1));
     return fileExtensions.includes(urlFileExtension);
 }
 // Listener for URL changes so we can display pageAction correctly
@@ -224,12 +224,24 @@ function convert(url) {
         }
     }
     var formData = new FormData();
-    // TODO check if the url is http:// or file:///
-    if (true) { //http
+    var urlScheme = url.substring(0, url.indexOf(':'));
+    if (urlScheme == "http" || urlScheme == "https") {
         formData.append("document[url]", url);
     }
     else {
         formData.append("document[file]", File); // TODO handle file uploading
     }
-    submitDocument(formData).then(function (data) { return alert(data); })["catch"](function (error) { return alert("error: " + error); });
+    submitDocument(formData).then(function (response) {
+        alert(JSON.stringify(response));
+        if (!response.hasOwnProperty("errors")) {
+            chrome.tabs.create({ url: baseUrl + response.document_url });
+        }
+        else {
+            if (response.errors.hasOwnProperty("url")) {
+                alert("ding");
+            }
+        }
+    })["catch"](function (error) { return console.log("submitDocument error: " + error); });
+    //{"document_url":"/documents/e5113747-6b4b-4b1a-b69b-c8ac4d884893/html"}
+    //{"errors":{"url":"Scribe couldn't retrieve a document from this URL."}}
 }

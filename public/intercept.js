@@ -3,8 +3,8 @@ var downloadObj = null; // actually a JSON object containing info about the down
 var continueDownloadOnExit = true; // used to decide if we auto-continue the download on window exit
 // window initialization that builds our download JSON object
 if (window.location.hash) {
-    var downloadInfo = JSON.parse(atob(window.location.hash.substr(1))); // we remove the # and use atob to decode base64
-    var downloadName = downloadInfo.downloadURL.substr(downloadInfo.downloadURL.lastIndexOf('/') + 1);
+    var downloadInfo = JSON.parse(atob(window.location.hash.substring(1))); // we remove the # and use atob to decode base64
+    var downloadName = downloadInfo.downloadURL.substring(downloadInfo.downloadURL.lastIndexOf('/') + 1);
     downloadObj = JSON.parse("{\"downloadURL\":\"" + downloadInfo.downloadURL + "\", \"downloadName\":\"" + downloadName + "\", \"downloadID\":\"" + downloadInfo.downloadID + "\"}");
     // logging to be removed
     console.log(downloadObj);

@@ -53,7 +53,7 @@ const mimeTypes: Array<string> = [
 
 // Helper function to check if the given URL is a supported filetype
 function isSupported(url: string | undefined) {
-  let urlFileExtension = '.' + url?.substr(url.lastIndexOf('.') + 1)
+  let urlFileExtension = '.' + url?.substring(url.lastIndexOf('.') + 1)
   return fileExtensions.includes(urlFileExtension)
 }
 
@@ -66,7 +66,7 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
 
 // Listener for when the Scribe toolbar button is clicked
 chrome.pageAction.onClicked.addListener(function (tab) {
-  convert(tab.url)
+  convert(tab.url!)
 })
 
 // Helper function to compare download object's startTime ISO timestamp with Date.now() since Chrome API is bugged for onCreated events
@@ -174,26 +174,40 @@ async function submitDocument(formData: FormData) {
   return data
 }
 
-// Placeholder for eventual convert process
-function convert(url: chrome.contextMenus.OnClickData | string | undefined) {
+// WIP convert process
+function convert(url: string | chrome.contextMenus.OnClickData) {
   // Handle URL extraction from onClick events
   if (typeof url == "object") {
     if (url.linkUrl) {
       url = url.linkUrl
     } else if (url.mediaType == "image") {
-      url = url.srcUrl
+      url = url.srcUrl!
     } else {
       console.log("onClick URL retrieval error")
     }
   }
 
   let formData = new FormData() as any
-  // TODO check if the url is http:// or file:///
-  if (true) { //http
-    formData.append("document[url]", url)
+
+  const urlScheme = (url as string).substring(0, (url as string).indexOf(':'))
+  if (urlScheme == "http" || urlScheme == "https") {
+    formData.append("document[url]", (url as string))
   } else {
     formData.append("document[file]", File) // TODO handle file uploading
   }
 
-  submitDocument(formData).then(data => alert(data)).catch(error => alert("error: " + error))
+  submitDocument(formData).then(response => {
+    alert(JSON.stringify(response))
+    if (!response.hasOwnProperty("errors")) {
+      chrome.tabs.create({url: baseUrl + response.document_url})
+    } else {
+      if (response.errors.hasOwnProperty("url")) {
+        alert("cant access url") // TODO handle file download/reupload for inaccessible URLs
+      }
+    }
+  }).catch(error => console.log("submitDocument error: " + error))
+  // temp examples
+  //{"document_url":"/documents/e5113747-6b4b-4b1a-b69b-c8ac4d884893/html"}
+  //{"errors":{"url":"Scribe couldn't retrieve a document from this URL."}}
+
 }
