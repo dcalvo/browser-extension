@@ -12,6 +12,7 @@ if (window.location.hash) {
 
     // logging to be removed
     console.log(downloadObj)
+    
 } else {
     console.log("window.location.hash error")
 }
@@ -20,6 +21,8 @@ if (window.location.hash) {
 document.addEventListener('DOMContentLoaded', function () {
     document.getElementById("convert-with-scribe")?.addEventListener("click", convertWithScribe)
     document.getElementById("continue-download")?.addEventListener("click", continueDownload)
+    document.getElementById("downloadUrl")!.innerHTML = downloadObj.downloadURL
+    document.getElementById("downloadName")!.innerHTML = downloadObj.downloadName
 })
 
 // handler for Escape-key exiting
