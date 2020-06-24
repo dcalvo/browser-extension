@@ -93,13 +93,14 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
     if (isSupported(tab.url)) {
         chrome.pageAction.show(tabId);
     }
+    else {
+        chrome.pageAction.hide(tabId);
+    }
 });
 // Listener for when the Scribe toolbar button is clicked
 chrome.pageAction.onClicked.addListener(function (tab) {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {
-            // for testing TODO remove
-            //getFileFromUrl(tab.url!)
             convert(tab.url);
             return [2 /*return*/];
         });
@@ -168,6 +169,135 @@ chrome.contextMenus.create({
     },
     targetUrlPatterns: matchedUrls
 });
+function getFileFromUrl(url) {
+    return __awaiter(this, void 0, void 0, function () {
+        var fileName, file;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    fileName = url.substring(url.lastIndexOf('/') + 1) // TODO fix this and maybe use UUID?
+                    ;
+                    return [4 /*yield*/, fetch(url).then(function (response) { return response.blob(); }).then(function (blobFile) {
+                            return new File([blobFile], fileName, { type: blobFile.type });
+                        })["catch"](function (err) { return console.log("getFileFromUrl error: " + err); })];
+                case 1:
+                    file = _a.sent();
+                    return [2 /*return*/, file];
+            }
+        });
+    });
+}
+function constructFormData(url, forceDownload) {
+    if (forceDownload === void 0) { forceDownload = false; }
+    return __awaiter(this, void 0, void 0, function () {
+        var formData, urlScheme, _a, _b, _c;
+        return __generator(this, function (_d) {
+            switch (_d.label) {
+                case 0:
+                    formData = new FormData();
+                    urlScheme = url.substring(0, url.indexOf(':'));
+                    if (!(!forceDownload && (urlScheme == "http" || urlScheme == "https"))) return [3 /*break*/, 1];
+                    formData.append("document[url]", url);
+                    return [3 /*break*/, 3];
+                case 1:
+                    _b = (_a = formData).append;
+                    _c = ["document[file]"];
+                    return [4 /*yield*/, getFileFromUrl(url)];
+                case 2:
+                    _b.apply(_a, _c.concat([_d.sent()]));
+                    _d.label = 3;
+                case 3: return [2 /*return*/, formData];
+            }
+        });
+    });
+}
+function submitDocument(formData) {
+    return __awaiter(this, void 0, void 0, function () {
+        var response, data;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, fetch(baseUrl + uploadUrl, {
+                        method: "POST",
+                        credentials: "include",
+                        body: formData
+                    })];
+                case 1:
+                    response = _a.sent();
+                    return [4 /*yield*/, response.json()];
+                case 2:
+                    data = _a.sent();
+                    return [2 /*return*/, data];
+            }
+        });
+    });
+}
+function handleServerResponse(response) {
+    if (!response.hasOwnProperty("errors")) {
+        chrome.tabs.create({ url: baseUrl + response.document_url });
+        return true; // successful conversion
+    }
+    else {
+        if (response.errors.hasOwnProperty("url")) {
+            return false;
+        }
+    }
+    return false;
+}
+// WIP convert process
+function convert(url) {
+    return __awaiter(this, void 0, void 0, function () {
+        var formData, response, retries, success;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    // Handle URL extraction from onClick events
+                    if (typeof url == "object") {
+                        if (url.linkUrl) {
+                            url = url.linkUrl;
+                        }
+                        else if (url.mediaType == "image") {
+                            url = url.srcUrl;
+                        }
+                        else {
+                            console.log("onClick URL retrieval error");
+                        }
+                    }
+                    return [4 /*yield*/, constructFormData(url)];
+                case 1:
+                    formData = _a.sent();
+                    return [4 /*yield*/, submitDocument(formData)
+                        // temp debug TODO remove
+                    ];
+                case 2:
+                    response = _a.sent();
+                    // temp debug TODO remove
+                    alert(JSON.stringify(response));
+                    retries = 3;
+                    success = false;
+                    _a.label = 3;
+                case 3:
+                    if (!(retries-- > 0 && !(success = handleServerResponse(response)))) return [3 /*break*/, 6];
+                    return [4 /*yield*/, constructFormData(url, true)]; // force download/upload of the doc
+                case 4:
+                    formData = _a.sent(); // force download/upload of the doc
+                    return [4 /*yield*/, submitDocument(formData)];
+                case 5:
+                    response = _a.sent();
+                    alert("retries: " + retries);
+                    return [3 /*break*/, 3];
+                case 6: return [2 /*return*/];
+            }
+        });
+    });
+}
+// temp examples
+//{"document_url":"/documents/e5113747-6b4b-4b1a-b69b-c8ac4d884893/html"}
+//{"errors":{"url":"Scribe couldn't retrieve a document from this URL."}}
+//scenarios
+//we have a public accessible url. we can convert. PASSED
+//we have a private unaccessible url. we need to fetch file (with creds) then upload as document. Semi/passed: file upload is broken and returning 500, but fetching works
+//we have a local file. we need to locate it on file system then upload as document. TODO
+//we need getFileFromUrl() which checks if its file:// or not. if true: search file system. else: use fetch api
 // Experimental code that is capable of detecting embedded PDFs (and other filetypes) in most cases, but has bugs where
 // opening new windows created unexpected behavior (context menu not being updated properly)
 /*
@@ -195,106 +325,4 @@ chrome.tabs.onActivated.addListener(function(activeInfo) {
     }
   })
 })
-*/
-function getFileFromUrl(url) {
-    return __awaiter(this, void 0, void 0, function () {
-        var fileName, file;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    fileName = url.substring(url.lastIndexOf('/') + 1);
-                    return [4 /*yield*/, fetch(url).then(function (response) { return response.blob(); }).then(function (blobFile) {
-                            return new File([blobFile], fileName, { type: blobFile.type });
-                        })["catch"](function (err) { return console.log("getFileFromUrl error: " + err); })
-                        // for testing TODO remove
-                        // let testUrl = URL.createObjectURL(file)
-                        // chrome.downloads.download({url: testUrl, filename:(file as File).name})
-                    ];
-                case 1:
-                    file = _a.sent();
-                    // for testing TODO remove
-                    // let testUrl = URL.createObjectURL(file)
-                    // chrome.downloads.download({url: testUrl, filename:(file as File).name})
-                    return [2 /*return*/, file];
-            }
-        });
-    });
-}
-function submitDocument(formData) {
-    return __awaiter(this, void 0, void 0, function () {
-        var response, data;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0: return [4 /*yield*/, fetch(baseUrl + uploadUrl, {
-                        method: "POST",
-                        credentials: "include",
-                        body: formData
-                    })];
-                case 1:
-                    response = _a.sent();
-                    return [4 /*yield*/, response.json()];
-                case 2:
-                    data = _a.sent();
-                    return [2 /*return*/, data];
-            }
-        });
-    });
-}
-// WIP convert process
-function convert(url) {
-    return __awaiter(this, void 0, void 0, function () {
-        var formData, urlScheme, _a, _b, _c;
-        return __generator(this, function (_d) {
-            switch (_d.label) {
-                case 0:
-                    // Handle URL extraction from onClick events
-                    if (typeof url == "object") {
-                        if (url.linkUrl) {
-                            url = url.linkUrl;
-                        }
-                        else if (url.mediaType == "image") {
-                            url = url.srcUrl;
-                        }
-                        else {
-                            console.log("onClick URL retrieval error");
-                        }
-                    }
-                    formData = new FormData();
-                    urlScheme = url.substring(0, url.indexOf(':'));
-                    if (!false) return [3 /*break*/, 1];
-                    formData.append("document[url]", url);
-                    return [3 /*break*/, 3];
-                case 1:
-                    _b = (_a = formData).append;
-                    _c = ["document[file]"];
-                    return [4 /*yield*/, getFileFromUrl(url)];
-                case 2:
-                    _b.apply(_a, _c.concat([_d.sent()]));
-                    _d.label = 3;
-                case 3: return [4 /*yield*/, submitDocument(formData).then(function (response) {
-                        alert(JSON.stringify(response));
-                        if (!response.hasOwnProperty("errors")) {
-                            chrome.tabs.create({ url: baseUrl + response.document_url });
-                        }
-                        else {
-                            if (response.errors.hasOwnProperty("url")) {
-                                alert("cant access url"); // TODO handle file download/reupload for inaccessible URLs
-                            }
-                        }
-                    })["catch"](function (error) { return console.log("submitDocument error: " + error); })
-                    // temp examples
-                    //{"document_url":"/documents/e5113747-6b4b-4b1a-b69b-c8ac4d884893/html"}
-                    //{"errors":{"url":"Scribe couldn't retrieve a document from this URL."}}
-                    //scenarios
-                    //we have a public accessible url. we can convert. PASSED
-                    //we have a private unaccessible url. we need to fetch file (with creds) then upload as document. TODO
-                    //we have a local file. we need to locate it on file system then upload as document. TODO
-                    //we need getFileFromUrl() which checks if its file:// or not. if true: search file system. else: use fetch api
-                ];
-                case 4:
-                    _d.sent();
-                    return [2 /*return*/];
-            }
-        });
-    });
-}
+*/ 

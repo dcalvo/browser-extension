@@ -61,14 +61,13 @@ function isSupported(url: string | undefined) {
 chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
   if (isSupported(tab.url)) {
     chrome.pageAction.show(tabId)
+  } else {
+    chrome.pageAction.hide(tabId)
   }
 })
 
 // Listener for when the Scribe toolbar button is clicked
 chrome.pageAction.onClicked.addListener(async function (tab) {
-  // for testing TODO remove
-  //getFileFromUrl(tab.url!)
-  
   convert(tab.url!)
 })
 
@@ -138,6 +137,90 @@ chrome.contextMenus.create({
   targetUrlPatterns: matchedUrls
 })
 
+async function getFileFromUrl(url: string) {
+  let fileName = url.substring(url.lastIndexOf('/') + 1) // TODO fix this and maybe use UUID?
+  let file = await fetch(url).then(response => response.blob()).then(blobFile => {
+    return new File([blobFile], fileName, {type: blobFile.type})
+  }).catch(err => console.log("getFileFromUrl error: " + err))
+  
+  return file
+}
+
+async function constructFormData(url: string, forceDownload = false) {
+  let formData = new FormData() as any
+  const urlScheme = (url as string).substring(0, (url as string).indexOf(':'))
+  if (!forceDownload && (urlScheme == "http" || urlScheme == "https")) {
+    formData.append("document[url]", (url as string))
+  } else {
+    formData.append("document[file]", await getFileFromUrl(url as string))
+  }
+  return formData
+}
+
+async function submitDocument(formData: FormData) {
+  let response = await fetch(baseUrl + uploadUrl, {
+    method: "POST",
+    credentials: "include",
+    body: formData
+  })
+  let data = await response.json()
+  return data
+}
+
+function handleServerResponse(response: any) {
+  if (!response.hasOwnProperty("errors")) {
+    chrome.tabs.create({url: baseUrl + response.document_url})
+    return true // successful conversion
+  } else {
+    if (response.errors.hasOwnProperty("url")) {
+      return false
+    }
+  }
+  return false
+}
+
+// WIP convert process
+async function convert(url: string | chrome.contextMenus.OnClickData) {
+  // Handle URL extraction from onClick events
+  if (typeof url == "object") {
+    if (url.linkUrl) {
+      url = url.linkUrl
+    } else if (url.mediaType == "image") {
+      url = url.srcUrl!
+    } else {
+      console.log("onClick URL retrieval error")
+    }
+  }
+
+  let formData = await constructFormData(url as string)
+
+  let response = await submitDocument(formData)
+  
+  // temp debug TODO remove
+  alert(JSON.stringify(response))
+  
+  let retries = 3
+  let success = false
+
+  while (retries-- > 0 && !(success = handleServerResponse(response))) {
+    formData = await constructFormData(url as string, true) // force download/upload of the doc
+    response = await submitDocument(formData)
+    alert("retries: " + retries)
+  }
+}
+
+  // temp examples
+  //{"document_url":"/documents/e5113747-6b4b-4b1a-b69b-c8ac4d884893/html"}
+  //{"errors":{"url":"Scribe couldn't retrieve a document from this URL."}}
+
+
+  //scenarios
+  //we have a public accessible url. we can convert. PASSED
+  //we have a private unaccessible url. we need to fetch file (with creds) then upload as document. Semi/passed: some errors after uploading to server
+  //we have a local file. we need to locate it on file system then upload as document. TODO
+  //we need getFileFromUrl() which checks if its file:// or not. if true: search file system. else: use fetch api
+
+  
 // Experimental code that is capable of detecting embedded PDFs (and other filetypes) in most cases, but has bugs where
 // opening new windows created unexpected behavior (context menu not being updated properly)
 /*
@@ -166,70 +249,3 @@ chrome.tabs.onActivated.addListener(function(activeInfo) {
   })
 })
 */
-
-async function getFileFromUrl(url: string) {
-  let fileName = url.substring(url.lastIndexOf('/') + 1)
-  let file = await fetch(url).then(response => response.blob()).then(blobFile => {
-    return new File([blobFile], fileName, {type: blobFile.type})
-  }).catch(err => console.log("getFileFromUrl error: " + err))
-  
-  // for testing TODO remove
-  // let testUrl = URL.createObjectURL(file)
-  // chrome.downloads.download({url: testUrl, filename:(file as File).name})
-  
-  return file
-}
-
-async function submitDocument(formData: FormData) {
-  let response = await fetch(baseUrl + uploadUrl, {
-    method: "POST",
-    credentials: "include",
-    body: formData
-  })
-  let data = await response.json()
-  return data
-}
-
-// WIP convert process
-async function convert(url: string | chrome.contextMenus.OnClickData) {
-  // Handle URL extraction from onClick events
-  if (typeof url == "object") {
-    if (url.linkUrl) {
-      url = url.linkUrl
-    } else if (url.mediaType == "image") {
-      url = url.srcUrl!
-    } else {
-      console.log("onClick URL retrieval error")
-    }
-  }
-
-  let formData = new FormData() as any
-
-  const urlScheme = (url as string).substring(0, (url as string).indexOf(':'))
-  if (false) {//urlScheme == "http" || urlScheme == "https"
-    formData.append("document[url]", (url as string))
-  } else {
-    formData.append("document[file]", await getFileFromUrl(url as string))
-  }
-
-  await submitDocument(formData).then(response => {
-    alert(JSON.stringify(response))
-    if (!response.hasOwnProperty("errors")) {
-      chrome.tabs.create({url: baseUrl + response.document_url})
-    } else {
-      if (response.errors.hasOwnProperty("url")) {
-        alert("cant access url") // TODO handle file download/reupload for inaccessible URLs
-      }
-    }
-  }).catch(error => console.log("submitDocument error: " + error))
-  // temp examples
-  //{"document_url":"/documents/e5113747-6b4b-4b1a-b69b-c8ac4d884893/html"}
-  //{"errors":{"url":"Scribe couldn't retrieve a document from this URL."}}
-
-
-  //scenarios
-  //we have a public accessible url. we can convert. PASSED
-  //we have a private unaccessible url. we need to fetch file (with creds) then upload as document. TODO
-  //we have a local file. we need to locate it on file system then upload as document. TODO
-  //we need getFileFromUrl() which checks if its file:// or not. if true: search file system. else: use fetch api
-}
