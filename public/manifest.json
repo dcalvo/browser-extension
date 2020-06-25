@@ -6,18 +6,18 @@
   "version": "0.0.1",
 
   
-  "page_action": {
+  "browser_action": {
     "default_icon": {         
-      "16": "icons/logo-small.png",
-      "24": "icons/logo-small.png",
-      "32": "icons/logo-small.png"
+      "16": "icons/icon16.png",
+      "24": "icons/icon24.png",
+      "32": "icons/icon32.png"
     },
     "default_title": "Convert with Scribe"
   },
   "icons": {
-    "16": "icons/logo-small.png",
-    "48": "icons/logo-small.png",
-    "128": "icons/logo-small.png"
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
   },
   "background": {
     "scripts": ["js/background.js"]

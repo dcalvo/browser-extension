@@ -3,6 +3,13 @@ let baseUrl = "https://scribeit.io"
 let uploadUrl = "/extension/api/documents"
 let welcomeUrl = "/extension/start"
 
+// Show welcome page to user on install
+chrome.runtime.onInstalled.addListener(function (details) {
+  if (details.reason == "install") {
+    chrome.tabs.create({ url: baseUrl + welcomeUrl })
+  }
+})
+
 // List of file extensions we create context menu options on
 const fileExtensions: Array<string> = [
   ".pdf",
@@ -54,18 +61,36 @@ function isSupported(url: string | undefined) {
   return fileExtensions.includes(urlFileExtension)
 }
 
-// Listener for URL changes so we can display pageAction correctly
+// Listener for URL changes so we can display browserAction correctly
 chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
-  if (isSupported(tab.url)) {
-    chrome.pageAction.show(tabId)
-  } else {
-    chrome.pageAction.hide(tabId)
+  if (tab.url) {
+    if (isSupported(tab.url)) {
+      chrome.browserAction.setIcon({
+        tabId: tabId, path: {
+          "16": "icons/icon16.png",
+          "48": "icons/icon48.png",
+          "128": "icons/icon128.png"
+        }
+      })
+      chrome.browserAction.enable(tabId)
+    } else {
+      chrome.browserAction.setIcon({
+        tabId: tabId, path: {
+          "16": "icons/gray16.png",
+          "48": "icons/gray48.png",
+          "128": "icons/gray128.png"
+        }
+      })
+      chrome.browserAction.disable(tabId)
+    }
   }
 })
 
 // Listener for when the Scribe toolbar button is clicked
-chrome.pageAction.onClicked.addListener(async function (tab) {
-  convert(tab.url!)
+chrome.browserAction.onClicked.addListener(async function (tab) {
+  if (tab.url) {
+    convert(tab.url)
+  }
 })
 
 // Helper function to compare download object's startTime ISO timestamp with Date.now() since Chrome API is bugged for onCreated events
@@ -106,7 +131,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   } else if (request.action == "download") {
     chrome.downloads.search({ id: downloadId }, function (download) {
       if (download[0].state != "complete") {
-        chrome.downloads.resume(downloadId)
+        chrome.downloads.resume(downloadId) // TODO fix pdf frame download bug
       }
     })
   } else {
@@ -137,9 +162,9 @@ chrome.contextMenus.create({
 async function getFileFromUrl(url: string) {
   let fileName = url.substring(url.lastIndexOf('/') + 1) // TODO fix this and maybe use UUID?
   let file = await fetch(url).then(response => response.blob()).then(blobFile => {
-    return new File([blobFile], fileName, {type: blobFile.type})
+    return new File([blobFile], fileName, { type: blobFile.type })
   }).catch(err => console.log("getFileFromUrl error: " + err))
-  
+
   return file
 }
 
@@ -166,7 +191,7 @@ async function submitDocument(formData: FormData) {
 
 function handleServerResponse(response: any) {
   if (!response.hasOwnProperty("errors")) {
-    chrome.tabs.create({url: baseUrl + response.document_url})
+    chrome.tabs.create({ url: baseUrl + response.document_url })
     return true // successful conversion
   } else {
     if (response.errors.hasOwnProperty("url")) {
@@ -192,10 +217,10 @@ async function convert(url: string | chrome.contextMenus.OnClickData) {
   let formData = await constructFormData(url as string)
 
   let response = await submitDocument(formData)
-  
+
   // temp debug TODO remove
   alert(JSON.stringify(response))
-  
+
   let retries = 3
   let success = false
 
@@ -216,33 +241,3 @@ async function convert(url: string | chrome.contextMenus.OnClickData) {
   //we have a private unaccessible url. we need to fetch file (with creds) then upload as document. Semi/passed: some errors after uploading to server
   //we have a local file. we need to locate it on file system then upload as document. TODO
   //we need getFileFromUrl() which checks if its file:// or not. if true: search file system. else: use fetch api
-
-  
-// Experimental code that is capable of detecting embedded PDFs (and other filetypes) in most cases, but has bugs where
-// opening new windows created unexpected behavior (context menu not being updated properly)
-/*
-// Listener for active tab URL so we can hide/show pageActionContext option
-chrome.tabs.onActivated.addListener(function(activeInfo) {
-  let tab = chrome.tabs.get(activeInfo.tabId, function(tab) {
-    let urlFileExtension = '.' + tab.url?.substr(tab.url.lastIndexOf('.') + 1)
-    if (fileExtensions.includes(urlFileExtension)) {
-      // Create context menu option for valid stand-alone file pages which we'll hide/show as necessary
-      chrome.contextMenus.remove("pageActionContext", function() {
-        void chrome.runtime.lastError
-        chrome.contextMenus.create({
-          id: "pageActionContext", // this context menu option is essentially tethered to whether the pageAction button is lit up
-          title: "Convert with Scribe",
-          contexts: ["page", "frame"],
-          onclick: function() {
-            convert()
-          }
-        })
-      })
-    } else {
-      chrome.contextMenus.remove("pageActionContext", function() {
-        void chrome.runtime.lastError
-      })
-    }
-  })
-})
-*/
