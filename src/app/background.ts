@@ -1,6 +1,3 @@
-// @ts-ignore
-// The above line is used to suppress the error that "all files must be modules" which I don't know how to fix
-
 // Base URL that relative URLs are added onto
 let baseUrl = "https://scribeit.io"
 let uploadUrl = "/extension/api/documents"

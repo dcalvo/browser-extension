@@ -1,5 +1,3 @@
-// @ts-ignore
-
 let downloadObj: any = null // actually a JSON object containing info about the downloaded file from the background script
 let continueDownloadOnExit: boolean = true // used to decide if we auto-continue the download on window exit
 
