@@ -1,20 +1,21 @@
 {
-  "name": "tsrwpcx",
+  "name": "scribe-browser-extension",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "webpack --mode=development",
+    "dist": "webpack --mode=production && cd dist && crx pack -o scribe.crx"
   },
   "keywords": [],
   "author": "",
-  "license": "BSD-3-Clause",
   "devDependencies": {
     "@types/chrome": "0.0.117",
     "@types/react": "^16.9.41",
     "@types/react-dom": "^16.9.8",
     "clean-webpack-plugin": "^3.0.0",
     "copy-webpack-plugin": "^6.0.2",
+    "crx": "^5.0.1",
     "css-loader": "^3.6.0",
     "style-loader": "^1.2.1",
     "ts-loader": "^7.0.5",
