@@ -8,16 +8,16 @@
   
   "page_action": {
     "default_icon": {         
-      "16": "logo-small.png",
-      "24": "logo-small.png",
-      "32": "logo-small.png"
+      "16": "icons/logo-small.png",
+      "24": "icons/logo-small.png",
+      "32": "icons/logo-small.png"
     },
     "default_title": "Convert with Scribe"
   },
   "icons": {
-    "16": "logo-small.png",
-    "48": "logo-small.png",
-    "128": "logo-small.png"
+    "16": "icons/logo-small.png",
+    "48": "icons/logo-small.png",
+    "128": "icons/logo-small.png"
   },
   "background": {
     "scripts": ["app/background.js"]
