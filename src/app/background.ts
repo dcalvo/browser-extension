@@ -159,12 +159,35 @@ chrome.contextMenus.create({
   targetUrlPatterns: matchedUrls
 })
 
-async function getFileFromUrl(url: string) {
-  let fileName = url.substring(url.lastIndexOf('/') + 1) // TODO fix this and maybe use UUID?
-  let file = await fetch(url).then(response => response.blob()).then(blobFile => {
-    return new File([blobFile], fileName, { type: blobFile.type })
-  }).catch(err => console.log("getFileFromUrl error: " + err))
+function fetchLocal(url: string): Promise<Response> {
+  return new Promise(function (resolve, reject) {
+    var xhr = new XMLHttpRequest
+    xhr.onload = function () {
+      resolve(new Response(xhr.response))
+    }
+    xhr.onerror = function () {
+      reject(new TypeError('Local request failed'))
+    }
+    xhr.open('GET', url)
+    xhr.responseType = "blob"
+    xhr.withCredentials = true
+    xhr.send(null)
+  })
+}
 
+async function getFileFromUrl(url: string) {
+  const urlScheme = (url as string).substring(0, (url as string).indexOf(':'))
+  let fileName = url.substring(url.lastIndexOf('/') + 1) // TODO fix this and maybe use UUID?
+  let file: any
+  if (urlScheme == "file") {
+    file = await fetchLocal(url).then(response => response.blob()).then(blobFile => {
+      return new File([blobFile], fileName, { type: blobFile.type })
+    }).catch(err => console.log("fetchLocal error: " + err))
+  } else {
+    file = await fetch(url).then(response => response.blob()).then(blobFile => {
+      return new File([blobFile], fileName, { type: blobFile.type })
+    }).catch(err => console.log("getFileFromUrl error: " + err))
+  }
   return file
 }
 
