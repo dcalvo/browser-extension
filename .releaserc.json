@@ -20,10 +20,11 @@
       "target": "trustedTesters"
     },
     {
-      "path": "@semantic-release/github",
+      "path": "@semantic-release/gitlab",
       "assets": [
         {
-          "path": "scribe-extension.zip"
+          "path": "scribe-extension.zip",
+          "label": "Extension Distribution"
         }
       ]
     }
