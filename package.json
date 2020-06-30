@@ -1,5 +1,5 @@
 {
-  "name": "scribe-browser-extension",
+  "name": "@skrybe/browser-extension",
   "version": "1.0.0",
   "description": "",
   "scripts": {
