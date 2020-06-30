@@ -12,12 +12,7 @@
     }
   ],
   "publish": [
-    {
-      "path": "semantic-release-chrome",
-      "asset": "scribe-extension.zip",
-      "extensionId": "",
-      "target": "trustedTesters"
-    },
+    
     {
       "path": "@semantic-release/gitlab",
       "assets": [
