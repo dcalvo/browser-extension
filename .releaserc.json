@@ -16,7 +16,8 @@
     {
       "path": "semantic-release-chrome",
       "asset": "scribe-extension.zip",
-      "extensionId": ""
+      "extensionId": "",
+      "target": "trustedTesters"
     },
     {
       "path": "@semantic-release/github",
