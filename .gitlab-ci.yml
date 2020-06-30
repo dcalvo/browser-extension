@@ -35,12 +35,12 @@ validate_package_scope:
       fi
 
 # Install dependencies and create production
-create_prod:
+create_dev:
   stage: build
   script:
     - |
         # Create production
-        npm run prod
+        npm run build
     
 # Publish
 publish:
@@ -48,4 +48,7 @@ publish:
     when: manual
     script:
     - |
+        # Create production dist
+        npm run prod
+        # Publish with versioning
         npx semantic-release
