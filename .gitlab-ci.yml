@@ -16,6 +16,7 @@ default:
       fi
     - NPM_PACKAGE_NAME=$(node -p "require('./package.json').name")
     - NPM_PACKAGE_VERSION=$(node -p "require('./package.json').version")
+    - npm install
 
 # Validate that the package name is properly scoped to the project's root namespace.
 # For more information, see https://docs.gitlab.com/ee/user/packages/npm_registry/#package-naming-convention
@@ -33,7 +34,15 @@ validate_package_scope:
 create_prod:
   stage: build
   script:
-    # Install
-    - npm install
-    # Create production
-    - npm run prod
+    - |
+        # Create production
+        npm run prod
+    
+# Publish
+publish:
+    stage: release
+    when: manual
+    script:
+    - |
+        npx semantic-release
+    
