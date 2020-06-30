@@ -1,3 +1,4 @@
 {
-  "extends": "@semantic-release/gitlab-config"
+  "extends": "@semantic-release/gitlab-config",
+  "dryRun": true
 }
