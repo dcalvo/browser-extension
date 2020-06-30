@@ -5,5 +5,26 @@
     "@semantic-release/commit-analyzer",
     "@semantic-release/release-notes-generator",
     "@semantic-release/gitlab"
+  ],
+  "prepare": [
+    {
+      "path": "semantic-release-chrome",
+      "asset": "scribe-extension.zip"
+    }
+  ],
+  "publish": [
+    {
+      "path": "semantic-release-chrome",
+      "asset": "scribe-extension.zip",
+      "extensionId": "mppjhhbajcciljocgbadbhbgphjfdmhj"
+    },
+    {
+      "path": "@semantic-release/github",
+      "assets": [
+        {
+          "path": "scribe-extension.zip"
+        }
+      ]
+    }
   ]
 }
