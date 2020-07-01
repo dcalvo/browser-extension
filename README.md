@@ -43,3 +43,7 @@ dist
 ```
 
 `dist` contains the unpacked Chrome extension. `webpack` is run in either development or production mode, depending on whether `npm run build` or `npm run prod` is called, respectively. `npm run prod` will optimize the compiled `.js` and additionally package the extension, creating `scribe.crx` in `dist` and `key.pem` in the root directory.
+
+## Contributing
+
+We're using [Commitizen](https://github.com/commitizen/cz-cli) and the [AngularJS](https://github.com/angular/angular.js/blob/master/DEVELOPERS.md#-git-commit-guidelines) commit guidelines.
