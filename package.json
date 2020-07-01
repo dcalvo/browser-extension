@@ -5,7 +5,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "webpack --mode=development",
-    "prod": "webpack --mode=production --devtool=false && cd dist"
+    "prod": "webpack --mode=production --devtool=false"
   },
   "keywords": [],
   "author": "",
