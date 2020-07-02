@@ -89,7 +89,11 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
 // Listener for when the Scribe toolbar button is clicked
 chrome.browserAction.onClicked.addListener(async function (tab) {
   if (tab.url) {
-    convert(tab.url)
+    chrome.browserAction.setBadgeText({ text: "Converting...", tabId: tab.id })
+    chrome.browserAction.disable(tab.id)
+    await convert(tab.url)
+    chrome.browserAction.setBadgeText({ text: "", tabId: tab.id })
+    chrome.browserAction.enable(tab.id)
   }
 })
 
