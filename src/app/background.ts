@@ -188,6 +188,7 @@ chrome.contextMenus.create({
   targetUrlPatterns: matchedUrls
 })
 
+// XMLHttpRequest is used due to fetch() API not being implemented for file:// URIs
 function fetchLocal(url: string): Promise<Response> {
   return new Promise(function (resolve, reject) {
     var xhr = new XMLHttpRequest
@@ -204,6 +205,7 @@ function fetchLocal(url: string): Promise<Response> {
   })
 }
 
+// Called when we have a local file, file behind an intranet, or the server fails to download a file for any other reason
 async function getFileFromUrl(url: string) {
   const urlScheme = url.substring(0, url.indexOf(':'))
   let fileName = getFileName(url)
@@ -220,6 +222,7 @@ async function getFileFromUrl(url: string) {
   return file
 }
 
+// Create the formData format with either URL or document binary as described in the spec
 async function constructFormData(url: string, forceDownload = false) {
   let formData = new FormData() as any
   const urlScheme = (url as string).substring(0, (url as string).indexOf(':'))
@@ -231,6 +234,8 @@ async function constructFormData(url: string, forceDownload = false) {
   return formData
 }
 
+// POST to Scribe server as described in spec
+// Note: most of the wait in the extension is tied up awaiting the fetch()
 async function submitDocument(formData: FormData) {
   let response = await fetch(baseUrl + uploadUrl, {
     method: "POST",
@@ -241,6 +246,7 @@ async function submitDocument(formData: FormData) {
   return data
 }
 
+// Used for error handling from the Scribe server and ensuring we know that a conversion was successful
 function handleServerResponse(response: any) {
   if (!response.hasOwnProperty("errors")) {
     chrome.tabs.create({ url: baseUrl + response.document_url })
@@ -253,6 +259,8 @@ function handleServerResponse(response: any) {
   return false
 }
 
+// Main convert function which lets each caller handle their own URL extraction
+// url should be the final url of the resource after any redirects
 let activeConverts = 0;
 async function convert(url: string) {
   activeConverts++
@@ -281,13 +289,4 @@ async function convert(url: string) {
   }
 }
 
-  // temp examples
-  //{"document_url":"/documents/e5113747-6b4b-4b1a-b69b-c8ac4d884893/html"}
-  //{"errors":{"url":"Scribe couldn't retrieve a document from this URL."}}
-
-
-  //scenarios
-  //we have a public accessible url. we can convert. PASSED
-  //we have a private unaccessible url. we need to fetch file (with creds) then upload as document. Semi/passed: some errors after uploading to server
-  //we have a local file. we need to locate it on file system then upload as document. TODO
-  //we need getFileFromUrl() which checks if its file:// or not. if true: search file system. else: use fetch api
+// TODO In cases of one-time downloads, we need a different way of handling those files (mirror downloaded data?)
