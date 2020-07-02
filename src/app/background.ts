@@ -97,15 +97,19 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
 })
 
 // Listener for when the Scribe toolbar button is clicked
+let activeConverts: Array<number> = []
 chrome.browserAction.onClicked.addListener(async function (tab) {
   //chrome.browserAction.setPopup({ popup: "../confirm.html" })
-
-  if (tab.url) {
-    chrome.browserAction.setBadgeText({ text: "Converting...", tabId: tab.id })
-    chrome.browserAction.disable(tab.id)
+  if (!activeConverts.includes(tab.id) && tab.url) {
+    activeConverts.push(tab.id)
+    chrome.browserAction.setBadgeText({ text: activeConverts.length.toString() })
     await convert(tab.url)
-    chrome.browserAction.setBadgeText({ text: "", tabId: tab.id })
-    chrome.browserAction.enable(tab.id)
+    activeConverts.splice(activeConverts.indexOf(tab.id), 1) // Remove completed convert tab
+    if (activeConverts.length == 0) {
+      chrome.browserAction.setBadgeText({ text: "" })
+    } else {
+      chrome.browserAction.setBadgeText({ text: activeConverts.length.toString() })
+    }
   }
 })
 
