@@ -10,6 +10,16 @@ chrome.runtime.onInstalled.addListener(function (details) {
   }
 })
 
+// Disable browserAction on extension startup
+// This is done to prevent clicking the browserAction on invalid pages
+window.onload = function () {
+  chrome.tabs.query({}, function (tabs) {
+    tabs.forEach(tab => {
+      chrome.browserAction.disable(tab.id)
+    });
+  })
+}
+
 // List of file extensions we create context menu options on
 const fileExtensions: Array<string> = [
   ".pdf",
@@ -88,6 +98,8 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
 
 // Listener for when the Scribe toolbar button is clicked
 chrome.browserAction.onClicked.addListener(async function (tab) {
+  //chrome.browserAction.setPopup({ popup: "../confirm.html" })
+
   if (tab.url) {
     chrome.browserAction.setBadgeText({ text: "Converting...", tabId: tab.id })
     chrome.browserAction.disable(tab.id)
