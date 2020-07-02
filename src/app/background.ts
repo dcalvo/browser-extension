@@ -67,7 +67,7 @@ const mimeTypes: Array<string> = [
 
 // Helper function to extract the filename with filetype from URL
 function getFileName(url: string) {
-  const fileName = url.substring(url.lastIndexOf('/') + 1).replace(/[\#\?].*$/,'')
+  const fileName = url.substring(url.lastIndexOf('/') + 1).replace(/[\#\?].*$/, '')
   return fileName
 }
 
@@ -104,20 +104,14 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
 })
 
 // Listener for when the Scribe toolbar button is clicked
-let activeConverts: Array<number> = []
+let tabsConverting: Array<number> = []
 chrome.browserAction.onClicked.addListener(async function (tab) {
-  if (!activeConverts.includes(tab.id) && tab.url) {
-    activeConverts.push(tab.id)
-    chrome.browserAction.setBadgeText({ text: activeConverts.length.toString() })
+  if (!tabsConverting.includes(tab.id) && tab.url) {
+    tabsConverting.push(tab.id)
 
     await convert(tab.url)
 
-    activeConverts.splice(activeConverts.indexOf(tab.id), 1) // Remove completed convert tab
-    if (activeConverts.length == 0) {
-      chrome.browserAction.setBadgeText({ text: "" })
-    } else {
-      chrome.browserAction.setBadgeText({ text: activeConverts.length.toString() })
-    }
+    tabsConverting.splice(tabsConverting.indexOf(tab.id), 1) // Remove completed convert tab
   }
 })
 
@@ -182,7 +176,14 @@ chrome.contextMenus.create({
   title: "Convert with Scribe",
   contexts: ["image", "link"],
   onclick: function (info) {
-    convert(info)
+    // Handle URL extraction from onClick events
+    if (info.linkUrl) {
+      convert(info.linkUrl)
+    } else if (info.mediaType == "image") {
+      convert(info.srcUrl)
+    } else {
+      console.log("onClick URL retrieval error")
+    }
   },
   targetUrlPatterns: matchedUrls
 })
@@ -252,17 +253,11 @@ function handleServerResponse(response: any) {
   return false
 }
 
-async function convert(url: string | chrome.contextMenus.OnClickData) {
-  // Handle URL extraction from onClick events
-  if (typeof url == "object") {
-    if (url.linkUrl) {
-      url = url.linkUrl
-    } else if (url.mediaType == "image") {
-      url = url.srcUrl!
-    } else {
-      console.log("onClick URL retrieval error")
-    }
-  }
+let activeConverts = 0;
+async function convert(url: string) {
+  activeConverts++
+  chrome.browserAction.setBadgeText({ text: activeConverts.toString() })
+  chrome.browserAction.setTitle({ title: `Converting ${activeConverts} document(s)...` })
 
   let formData = await constructFormData(url as string)
 
@@ -274,6 +269,15 @@ async function convert(url: string | chrome.contextMenus.OnClickData) {
   while (retries-- > 0 && !(success = handleServerResponse(response))) {
     formData = await constructFormData(url as string, true) // force download/upload of the doc
     response = await submitDocument(formData)
+  }
+
+  activeConverts--
+  if (activeConverts == 0) {
+    chrome.browserAction.setBadgeText({ text: "" })
+    chrome.browserAction.setTitle({ title: "Convert with Scribe" })
+  } else {
+    chrome.browserAction.setBadgeText({ text: activeConverts.toString() })
+    chrome.browserAction.setTitle({ title: `Converting ${activeConverts} document(s)...` })
   }
 }
 
