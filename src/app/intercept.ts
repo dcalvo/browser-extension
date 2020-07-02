@@ -4,7 +4,7 @@ let continueDownloadOnExit: boolean = true // used to decide if we auto-continue
 // window initialization that builds our download JSON object
 if (window.location.hash) {
     const downloadInfo = JSON.parse(atob(window.location.hash.substring(1))) // we remove the # and use atob to decode base64
-    const downloadName = downloadInfo.downloadURL.substring(downloadInfo.downloadURL.lastIndexOf('/') + 1)
+    const downloadName = downloadInfo.downloadURL.substring(downloadInfo.downloadURL.lastIndexOf('/') + 1).replace(/[\#\?].*$/,'')
 
     downloadObj = JSON.parse(`{"downloadURL":"${downloadInfo.downloadURL}", "downloadName":"${downloadName}", "downloadID":"${downloadInfo.downloadID}"}`)
 

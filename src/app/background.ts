@@ -65,9 +65,16 @@ const mimeTypes: Array<string> = [
   "image/bmp",                                                                    // .bmp
 ]
 
+// Helper function to extract the filename with filetype from URL
+function getFileName(url: string) {
+  const fileName = url.substring(url.lastIndexOf('/') + 1).replace(/[\#\?].*$/,'')
+  return fileName
+}
+
 // Helper function to check if the given URL is a supported filetype
-function isSupported(url: string | undefined) {
-  let urlFileExtension = '.' + url?.substring(url.lastIndexOf('.') + 1)
+function isSupported(url: string) {
+  const fileName = getFileName(url)
+  let urlFileExtension = fileName.substring(fileName.lastIndexOf('.'))
   return fileExtensions.includes(urlFileExtension)
 }
 
@@ -99,11 +106,12 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
 // Listener for when the Scribe toolbar button is clicked
 let activeConverts: Array<number> = []
 chrome.browserAction.onClicked.addListener(async function (tab) {
-  //chrome.browserAction.setPopup({ popup: "../confirm.html" })
   if (!activeConverts.includes(tab.id) && tab.url) {
     activeConverts.push(tab.id)
     chrome.browserAction.setBadgeText({ text: activeConverts.length.toString() })
+
     await convert(tab.url)
+
     activeConverts.splice(activeConverts.indexOf(tab.id), 1) // Remove completed convert tab
     if (activeConverts.length == 0) {
       chrome.browserAction.setBadgeText({ text: "" })
@@ -196,8 +204,8 @@ function fetchLocal(url: string): Promise<Response> {
 }
 
 async function getFileFromUrl(url: string) {
-  const urlScheme = (url as string).substring(0, (url as string).indexOf(':'))
-  let fileName = url.substring(url.lastIndexOf('/') + 1) // TODO fix this and maybe use UUID?
+  const urlScheme = url.substring(0, url.indexOf(':'))
+  let fileName = getFileName(url)
   let file: any
   if (urlScheme == "file") {
     file = await fetchLocal(url).then(response => response.blob()).then(blobFile => {
@@ -244,7 +252,6 @@ function handleServerResponse(response: any) {
   return false
 }
 
-// WIP convert process
 async function convert(url: string | chrome.contextMenus.OnClickData) {
   // Handle URL extraction from onClick events
   if (typeof url == "object") {
@@ -261,16 +268,12 @@ async function convert(url: string | chrome.contextMenus.OnClickData) {
 
   let response = await submitDocument(formData)
 
-  // temp debug TODO remove
-  alert(JSON.stringify(response))
-
   let retries = 3
   let success = false
 
   while (retries-- > 0 && !(success = handleServerResponse(response))) {
     formData = await constructFormData(url as string, true) // force download/upload of the doc
     response = await submitDocument(formData)
-    alert("retries: " + retries)
   }
 }
 
