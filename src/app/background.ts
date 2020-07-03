@@ -16,8 +16,21 @@ window.onload = function () {
   chrome.tabs.query({}, function (tabs) {
     tabs.forEach(tab => {
       chrome.browserAction.disable(tab.id)
-    });
+    })
   })
+
+  checkIfCredentialed()
+}
+
+// TODO this is only a temporary fix for requiring users to have credentials to convert
+async function checkIfCredentialed() {
+  let response = await fetch(baseUrl + uploadUrl, { method: "POST", credentials: "include" })
+  if (response.redirected) {
+    chrome.tabs.create({ url: baseUrl + "/auth" })
+    return false
+  } else {
+    return true
+  }
 }
 
 // List of file extensions we create context menu options on
@@ -267,6 +280,21 @@ async function convert(url: string) {
   chrome.browserAction.setBadgeText({ text: activeConverts.toString() })
   chrome.browserAction.setTitle({ title: `Converting ${activeConverts} document(s)...` })
 
+  // TODO remove temporary fix
+  let credentialed = await checkIfCredentialed()
+  if (!credentialed) {
+    alert("Please log into the Scribe conversion service and reinitiate your document conversion.")
+    activeConverts--
+    if (activeConverts == 0) {
+      chrome.browserAction.setBadgeText({ text: "" })
+      chrome.browserAction.setTitle({ title: "Convert with Scribe" })
+    } else {
+      chrome.browserAction.setBadgeText({ text: activeConverts.toString() })
+      chrome.browserAction.setTitle({ title: `Converting ${activeConverts} document(s)...` })
+    }
+    return
+  }
+
   let formData = await constructFormData(url as string)
 
   let response = await submitDocument(formData)
@@ -290,3 +318,4 @@ async function convert(url: string) {
 }
 
 // TODO In cases of one-time downloads, we need a different way of handling those files (mirror downloaded data?)
+// TODO hotkey in right click menu
