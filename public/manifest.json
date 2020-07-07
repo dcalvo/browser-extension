@@ -22,10 +22,11 @@
     ]
   },
   "commands": {
-    "_execute_browser_action": {
+    "convert-with-scribe": {
       "suggested_key": {
-        "default": "Ctrl+Shift+L"
-      }
+        "default": "Ctrl+Shift+Period"
+      },
+      "description": "Convert with Scribe using a single keyboard shortcut, using intelligent context"
     }
   },
   "content_security_policy": "script-src 'self' 'sha256-CMyYic0d7L0Q9AwjGU0n6buHFRR6bU3TOAe0P7DEJrk='; object-src 'self'",

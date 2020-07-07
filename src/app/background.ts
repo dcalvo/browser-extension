@@ -22,6 +22,8 @@ window.onload = function () {
   checkIfCredentialed()
 }
 
+
+
 // TODO this is only a temporary fix for requiring users to have credentials to convert
 async function checkIfCredentialed() {
   let response = await fetch(baseUrl + uploadUrl, { method: "POST", credentials: "include" })
@@ -149,8 +151,15 @@ chrome.downloads.onCreated.addListener(function (item) {
   }
 })
 
-// Listener for download intercept confirmation window
+// Listener for content scripts
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+  if (request.hasOwnProperty("action")) {
+    downloadIntercept(request)
+  } // else if (request.hasOwnProperty("command"))
+})
+
+// Download confirmation window handler
+function downloadIntercept(request) {
   let downloadId: number = parseInt(request.downloadID)
   if (request.action == "convert") {
     chrome.downloads.search({ id: downloadId }, function (download) {
@@ -172,8 +181,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   } else {
     console.log("intercept.js response error")
   }
-})
-
+}
 // Helper function to build match patterns for extension URLs since Chrome API doesn't support regex
 function matchedUrlListBuilder() {
   let matchedUrls: Array<string> = []
@@ -318,4 +326,5 @@ async function convert(url: string) {
 }
 
 // TODO In cases of one-time downloads, we need a different way of handling those files (mirror downloaded data?)
-// TODO hotkey in right click menu
+// TODO hotkey in right click menu (oncontextMenu event and e.target)
+// TODO send system notifications during convert

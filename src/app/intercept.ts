@@ -40,14 +40,24 @@ window.addEventListener('beforeunload', function (event) {
 })
 
 function convertWithScribe() {
-    chrome.runtime.sendMessage({ action: "convert", downloadURL: downloadObj.downloadURL, downloadName: downloadObj.downloadName, downloadID: downloadObj.downloadID })
+    chrome.runtime.sendMessage({
+        action: "convert",
+        downloadURL: downloadObj.downloadURL,
+        downloadName: downloadObj.downloadName,
+        downloadID: downloadObj.downloadID
+    })
     continueDownloadOnExit = false
     window.close()
 }
 
 function continueDownload() {
     if (downloadObj != null) {
-        chrome.runtime.sendMessage({ action: "download", downloadURL: downloadObj.downloadURL, downloadName: downloadObj.downloadName, downloadID: downloadObj.downloadID })
+        chrome.runtime.sendMessage({
+            action: "download",
+            downloadURL: downloadObj.downloadURL,
+            downloadName: downloadObj.downloadName,
+            downloadID: downloadObj.downloadID
+        })
     }
     continueDownloadOnExit = false // required otherwise we fall into an infinite loop
     window.close()
