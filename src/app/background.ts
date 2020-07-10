@@ -322,6 +322,15 @@ async function convert(url: string) {
     response = await submitDocument(formData)
   }
 
+  if (!success) {
+    chrome.notifications.create({
+      type: "basic",
+      iconUrl: "../icons/icon128.png",
+      title: "Convert with Scribe",
+      message: "Sorry, there was an error in converting your document."
+    })
+  }
+
   activeConverts--
   if (activeConverts == 0) {
     chrome.browserAction.setBadgeText({ text: "" })
