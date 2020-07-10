@@ -22,7 +22,7 @@
     ]
   },
   "commands": {
-    "convert-with-scribe": {
+    "_execute_browser_action": {
       "suggested_key": {
         "default": "Ctrl+Shift+Period"
       },
@@ -34,6 +34,7 @@
     "<all_urls>",
     "contextMenus",
     "downloads",
-    "tabs"
+    "tabs",
+    "notifications"
   ]
 }

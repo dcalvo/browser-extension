@@ -153,7 +153,7 @@ chrome.downloads.onCreated.addListener(function (item) {
 
 // Listener for content scripts
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-  if (request.hasOwnProperty("action")) {
+  if (request.hasOwnProperty("action")) { // if this came from intercept
     downloadIntercept(request)
   } // else if (request.hasOwnProperty("command"))
 })
@@ -302,6 +302,13 @@ async function convert(url: string) {
     }
     return
   }
+
+  chrome.notifications.create({
+    type: "basic",
+    iconUrl: "../icons/icon128.png",
+    title: "Convert with Scribe",
+    message: "Your document is now being converting. Please wait..."
+  })
 
   let formData = await constructFormData(url as string)
 
