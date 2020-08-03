@@ -307,7 +307,7 @@ async function convert(url: string) {
     type: "basic",
     iconUrl: "../icons/icon128.png",
     title: "Convert with Scribe",
-    message: "Your document is now being converting. Please wait..."
+    message: "Your document is now being converted. Please wait..."
   })
 
   let formData = await constructFormData(url as string)
